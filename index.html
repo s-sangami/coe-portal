@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>COE External Staff Portal — EPMCE</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --ext:#6b2080;--ext-light:#f3e8fb;--ext-mid:#9b4dca;--ext-dark:#51186b;
+  --bg:#f5f7fa;--card:#fff;--border:#e2e8f0;
+  --text:#1a202c;--muted:#718096;--danger:#c53030;--success:#276749;
+  --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.08);
+  font-family:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* HEADER */
+.portal-header{background:linear-gradient(135deg,#6b2080 0%,#1e4d8c 100%);padding:28px 24px 24px;text-align:center;color:#fff;}
+.portal-logo{font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.8;margin-bottom:6px;}
+.portal-title{font-size:22px;font-weight:700;margin-bottom:4px;}
+.portal-sub{font-size:13px;opacity:.75;}
+.portal-badge{display:inline-block;margin-top:10px;padding:4px 14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;font-size:12px;font-weight:600;}
+
+/* MAIN */
+.portal-wrap{max-width:680px;margin:0 auto;padding:24px 16px 48px;}
+
+/* STEP INDICATOR */
+.steps{display:flex;align-items:center;gap:0;margin-bottom:28px;}
+.step{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);}
+.step.active{color:var(--ext);}
+.step.done{color:var(--success);}
+.step-num{width:24px;height:24px;border-radius:50%;border:2px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.step.done .step-num{background:var(--success);border-color:var(--success);color:#fff;}
+.step.active .step-num{background:var(--ext);border-color:var(--ext);color:#fff;}
+.step-line{flex:1;height:2px;background:var(--border);margin:0 6px;}
+.step-line.done{background:var(--success);}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:var(--shadow);}
+.card-title{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title-icon{width:28px;height:28px;border-radius:7px;background:var(--ext-light);display:flex;align-items:center;justify-content:center;font-size:14px;}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px;}
+.form-grid-1{grid-template-columns:1fr;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:4px;}
+.req{color:var(--danger);}
+.form-input{padding:9px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none;transition:.2s;background:#fff;}
+.form-input:focus{border-color:var(--ext);box-shadow:0 0 0 3px rgba(107,32,128,.08);}
+.form-input.mono{font-family:'DM Mono',monospace;letter-spacing:.5px;}
+.form-input.error{border-color:var(--danger);}
+.form-select{padding:9px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer;transition:.2s;}
+.form-select:focus{border-color:var(--ext);}
+.field-err{font-size:11px;color:var(--danger);margin-top:2px;}
+.field-hint{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* WORK TYPE CARDS */
+.wt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+.wt-card{border:2px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:.2s;background:#fff;}
+.wt-card:hover{border-color:var(--ext-mid);background:var(--ext-light);}
+.wt-card.selected{border-color:var(--ext);background:var(--ext-light);}
+.wt-icon{font-size:20px;margin-bottom:6px;}
+.wt-label{font-size:13px;font-weight:600;color:var(--text);}
+.wt-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* DATE ROWS */
+.date-rows-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.date-rows-table th{background:#f8f9fc;padding:7px 8px;border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--muted);}
+.date-rows-table td{padding:6px 8px;border:1px solid var(--border);}
+.date-rows-table input,.date-rows-table select{width:100%;padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit;outline:none;}
+.date-rows-table input:focus,.date-rows-table select:focus{border-color:var(--ext);}
+.ext-duty-hdr{background:#f0e6f7;font-weight:700;color:var(--ext);text-align:center;padding:5px 8px;border:1px solid var(--border);}
+
+/* BUTTONS */
+.btn-primary{background:var(--ext);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s;font-family:inherit;}
+.btn-primary:hover{background:var(--ext-dark);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary{background:#fff;color:var(--ext);border:1.5px solid var(--ext);padding:11px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s;font-family:inherit;}
+.btn-secondary:hover{background:var(--ext-light);}
+.btn-sm-del{background:#fff;color:var(--danger);border:1.5px solid var(--danger);padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-sm-add{background:#fff;color:var(--ext);border:1.5px solid var(--ext);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;}
+.form-actions{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;justify-content:flex-end;}
+
+/* SUCCESS */
+.success-wrap{text-align:center;padding:40px 20px;}
+.success-icon{font-size:56px;margin-bottom:16px;}
+.success-title{font-size:22px;font-weight:700;color:var(--success);margin-bottom:8px;}
+.success-sub{font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6;}
+.ref-box{display:inline-block;padding:10px 20px;background:#f0faf4;border:1px solid #a8d5b8;border-radius:8px;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--success);letter-spacing:1px;}
+
+/* TOAST */
+.toast-wrap{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:12px 18px;border-radius:9px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .25s ease;max-width:320px;}
+.toast.success{background:var(--success);}
+.toast.error{background:var(--danger);}
+.toast.info{background:var(--ext);}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* SEASON NOTICE */
+.season-notice{background:var(--ext-light);border:1px solid #d8aee8;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ext);font-weight:600;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+
+/* REVIEW BOX */
+.review-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.review-row:last-child{border-bottom:none;}
+.review-label{color:var(--muted);font-weight:500;}
+.review-val{font-weight:600;text-align:right;max-width:60%;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+const SUPA_URL = 'https://kfvpjphdmymuokdxsbnj.supabase.co';
+const SUPA_KEY = 'sb_publishable_B6A_RpeE8mTGiq-ZAF-80w_yNj-hF6g';
+const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const DEPTS = ['AERO','EEE','ECE','CSE','IT','AIML','AIDS','MCA','MCO','MBA','CHEM','CIVIL','CSBS','MECH'];
+
+const EXT_WORKS = [
+  {id:'QP_EXT',    label:'QP Setting',                  icon:'📝', sub:'Question Paper Setting'},
+  {id:'SCRUT_EXT', label:'QP Scrutiny',                 icon:'🔍', sub:'Question Paper Scrutiny'},
+  {id:'VAL_PH1_EXT',label:'Valuation Phase 1',          icon:'📋', sub:'External Examiner'},
+  {id:'VAL_PH2_EXT',label:'Valuation Phase 2',          icon:'📋', sub:'External Examiner'},
+  {id:'PRAC_EXT',  label:'Practical Examiner',          icon:'🔬', sub:'Practical Examination'},
+  {id:'EXT_DUTY',  label:'External Hall Duty',          icon:'🏫', sub:'EHS / IHS / RHS'},
+  {id:'AU_REP',    label:'Anna University Representative', icon:'🎓', sub:'AU Representative'},
+];
+
+const DATE_BASED_EXT = ['PRAC_EXT','EXT_DUTY'];
+const IS_EXT_DUTY = 'EXT_DUTY';
+
+function useToast(){
+  const [toasts,setToasts]=useState([]);
+  const show=(msg,type='info')=>{
+    const id=Date.now();
+    setToasts(t=>[...t,{id,msg,type}]);
+    setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),4000);
+  };
+  return{toasts,show};
+}
+function Toasts({toasts}){
+  return <div className="toast-wrap">{toasts.map(t=><div key={t.id} className={`toast ${t.type}`}>{t.msg}</div>)}</div>;
+}
+
+function newDateRow(){
+  return {date:'',session:'FN',no_sessions:1,ehs_rem:0,ehs_lump:0,ihs_rem:0,rhs_rem:0,row_amount:0};
+}
+function calcExtRow(r){
+  const ehs=Number(r.ehs_rem||0)+Number(r.ehs_lump||0);
+  return {...r,row_amount:ehs+Number(r.ihs_rem||0)+Number(r.rhs_rem||0)};
+}
+function fmt(n){return n?'₹'+Number(n).toLocaleString('en-IN'):'₹0';}
+function validateMobile(m){
+  const d=(m||'').replace(/\D/g,'');
+  if(d.length===0) return {valid:false,empty:true};
+  if(d.length!==10) return {valid:false,reason:`Must be 10 digits (got ${d.length})`};
+  if(!/^[6-9]/.test(d)) return {valid:false,reason:'Must start with 6, 7, 8, or 9'};
+  return {valid:true,clean:d};
+}
+
+// ── STEP INDICATOR ──────────────────────────────────────────
+function Steps({step}){
+  const steps=['Work Type','Your Details','Bank Details','Review & Submit'];
+  return(
+    <div className="steps">
+      {steps.map((s,i)=>{
+        const num=i+1;
+        const isDone=step>num;
+        const isActive=step===num;
+        return(
+          <React.Fragment key={i}>
+            {i>0&&<div className={`step-line${isDone?' done':''}`}/>}
+            <div className={`step${isDone?' done':isActive?' active':''}`}>
+              <div className="step-num">{isDone?'✓':num}</div>
+              <span style={{whiteSpace:'nowrap'}}>{s}</span>
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── PORTAL APP ───────────────────────────────────────────────
+function Portal(){
+  const toast=useToast();
+  const [step,setStep]=useState(0); // 0 = pick INT/EXT, 1 = pick work type
+  const [staffType,setStaffType]=useState(null); // 'INT' or 'EXT'
+  const [seasons,setSeasons]=useState([]);
+  const [activeSeason,setActiveSeason]=useState(null);
+  const [workType,setWorkType]=useState(null);
+  const [submitted,setSubmitted]=useState(false);
+  const [refId,setRefId]=useState('');
+  const [saving,setSaving]=useState(false);
+
+  // Form state
+  const [personal,setPersonal]=useState({
+    name:'',designation:'',college:'',college_code:'',dept:'',mobile_no:'',subject_code:'',subject_name:'',board_name:'',assigned_duty:'',
+  });
+  const [bank,setBank]=useState({ac_no:'',ifsc_code:'',bank:'',branch:''});
+  const [ifscStatus,setIfscStatus]=useState({state:'idle'}); // idle | checking | valid | invalid | error
+  const ifscTimer=useRef(null);
+
+  function validateIfsc(code){
+    const clean=(code||'').trim().toUpperCase();
+    // Basic format: 4 letters + 0 + 6 alphanumeric
+    if(!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(clean)){
+      setIfscStatus({state:clean.length===0?'idle':'invalid',msg:'Invalid format — must be 11 chars like SBIN0001234'});
+      return;
+    }
+    setIfscStatus({state:'checking'});
+    // Use Razorpay free IFSC API (no auth, CORS enabled)
+    fetch('https://ifsc.razorpay.com/'+clean)
+      .then(r=>{
+        if(r.status===404) throw new Error('not_found');
+        if(!r.ok) throw new Error('api_error');
+        return r.json();
+      })
+      .then(d=>{
+        setIfscStatus({state:'valid',data:d});
+        // Auto-fill bank name and branch
+        setBank(f=>({...f,bank:d.BANK||'',branch:d.BRANCH||''}));
+      })
+      .catch(e=>{
+        if(e.message==='not_found') setIfscStatus({state:'invalid',msg:'IFSC not found in bank database'});
+        else setIfscStatus({state:'error',msg:'Could not verify — check internet'});
+      });
+  }
+
+  function onIfscChange(v){
+    const upper=v.toUpperCase();
+    b('ifsc_code',upper);
+    // Debounce — validate 400ms after user stops typing
+    clearTimeout(ifscTimer.current);
+    ifscTimer.current=setTimeout(()=>validateIfsc(upper),400);
+  }
+  const [dateRows,setDateRows]=useState([newDateRow()]);
+  const [errors,setErrors]=useState({});
+
+  // TOKEN-BASED ACCESS — expiry baked into the URL
+  // URL format: coe-portal.html?t=base64(SEASONID_EXPIRYMS)
+  // TOKEN CHECK — runs on every render + ticks every second
+  function getTokenState(){
+    try{
+      const raw=new URLSearchParams(window.location.search).get('t');
+      if(!raw) return {valid:false,expired:false,expiry:null,seasonId:'ND25'};
+      // Reverse URL-safe base64: -→+, _→/, add padding
+      const b64=raw.replace(/-/g,'+').replace(/_/g,'/');
+      const padded=b64+'==='.slice(0,(4-b64.length%4)%4);
+      const decoded=atob(padded);
+      const under=decoded.lastIndexOf('_');
+      if(under<0) return {valid:false,expired:false,expiry:null,seasonId:'ND25'};
+      const seasonId=decoded.slice(0,under);
+      const expiry=parseInt(decoded.slice(under+1));
+      if(isNaN(expiry)) return {valid:false,expired:false,expiry:null,seasonId};
+      const now=Date.now();
+      if(now>expiry) return {valid:false,expired:true,expiry,seasonId};
+      return {valid:true,expired:false,expiry,seasonId,msLeft:expiry-now};
+    }catch(e){
+      return {valid:false,expired:false,expiry:null,seasonId:'ND25'};
+    }
+  }
+
+  // Tick every second to re-evaluate expiry in real time
+  const [tick,setTick]=useState(0);
+  useEffect(()=>{
+    const t=setInterval(()=>setTick(n=>n+1),1000);
+    return()=>clearInterval(t);
+  },[]);
+
+  const tokenInfo=getTokenState(); // re-runs every second via tick
+  const isOpen=tokenInfo.valid;
+
+  // Load season name for display
+  useEffect(()=>{
+    const sid=tokenInfo.seasonId||'ND25';
+    supabase.from('exam_seasons').select('*').eq('id',sid).maybeSingle()
+      .then(({data})=>{if(data){setSeasons([data]);setActiveSeason(data);}});
+  },[]);
+
+
+
+  const wt=EXT_WORKS.find(w=>w.id===workType);
+  const isDateBased=DATE_BASED_EXT.includes(workType);
+  const isExtDuty=workType===IS_EXT_DUTY;
+  const isVal=['VAL_PH1_EXT','VAL_PH2_EXT'].includes(workType);
+  const isQP=['QP_EXT','SCRUT_EXT'].includes(workType);
+  const isPrac=workType==='PRAC_EXT';
+
+  const p=(k,v)=>setPersonal(f=>({...f,[k]:v}));
+  const b=(k,v)=>setBank(f=>({...f,[k]:v}));
+
+  // Date row handlers
+  const setDR=(i,k,v)=>{
+    setDateRows(rows=>{
+      const r=[...rows];
+      r[i]={...r[i],[k]:v};
+      if(isExtDuty) r[i]=calcExtRow(r[i]);
+      return r;
+    });
+  };
+  const addDR=()=>setDateRows(r=>[...r,newDateRow()]);
+  const delDR=(i)=>setDateRows(r=>r.filter((_,j)=>j!==i));
+
+  // For PRAC_EXT and EXT_DUTY, COE admin sets the amount later — staff doesn't see it
+  const adminSetsAmount=['PRAC_EXT','EXT_DUTY'].includes(workType);
+  const totalAmount=adminSetsAmount?0:(isDateBased
+    ? dateRows.reduce((s,r)=>s+(isExtDuty?Number(r.row_amount||0):Number(r.no_sessions||0)*150),0)
+    : 0);
+
+  // Validation
+  function validate(fields,required){
+    const e={};
+    required.forEach(k=>{if(!fields[k]||!String(fields[k]).trim())e[k]='Required';});
+    setErrors(e);
+    return Object.keys(e).length===0;
+  }
+
+  function nextFromStep1(){
+    if(!workType){toast.show('Please select a work type','error');return;}
+    setStep(2);window.scrollTo(0,0);
+  }
+  function nextFromStep2(){
+    const required=['name','mobile_no'];
+    if(isVal) required.push('board_name');
+    if(isQP) required.push('subject_code');
+    if(!validate(personal,required))return;
+    const mv=validateMobile(personal.mobile_no);
+    if(!mv.valid){toast.show('Please enter a valid 10-digit mobile number','error');return;}
+    setStep(3);window.scrollTo(0,0);
+  }
+  function nextFromStep3(){
+    if(!validate(bank,['ac_no','ifsc_code','bank','branch']))return;
+    if(ifscStatus.state==='invalid'){
+      toast.show('Please enter a valid IFSC code','error');
+      return;
+    }
+    if(ifscStatus.state==='checking'){
+      toast.show('Please wait for IFSC verification to complete','info');
+      return;
+    }
+    setStep(4);window.scrollTo(0,0);
+  }
+
+  async function submit(){
+    setSaving(true);
+    try{
+      const id=crypto.randomUUID();
+      const payload={
+        id,
+        season_id:activeSeason.id,
+        work_type_id:workType,
+        name:personal.name,
+        designation:personal.designation||'',
+        college:personal.college||'',
+        college_code:personal.college_code||'',
+        subject_name:personal.subject_name||'',
+        dept:personal.dept||'',
+        mobile_no:personal.mobile_no,
+        subject_code:personal.subject_code||'',
+        board_name:personal.board_name||'',
+
+        assigned_duty:personal.assigned_duty||'',
+        ac_no:bank.ac_no,
+        ifsc_code:bank.ifsc_code,
+        bank:bank.bank,
+        branch:bank.branch,
+        amount:totalAmount,
+        status:'draft',
+        entry_source:'portal',
+      };
+      const {error}=await supabase.from('claims').insert([payload]);
+      if(error) throw new Error(error.message);
+
+      // Insert date rows if applicable
+      if(isDateBased){
+        const drPayload=dateRows.map(r=>({
+          claim_id:id,
+          date:r.date||'',
+          session:r.session||'FN',
+          no_sessions:r.no_sessions||1,
+          ehs_rem:r.ehs_rem||0,
+          ehs_lump:r.ehs_lump||0,
+          ihs_rem:r.ihs_rem||0,
+          rhs_rem:r.rhs_rem||0,
+          row_amount:r.row_amount||0,
+        }));
+        const {error:drErr}=await supabase.from('claim_date_rows').insert(drPayload);
+        if(drErr) throw new Error(drErr.message);
+      }
+
+      setRefId(id.slice(0,8).toUpperCase());
+      setSubmitted(true);
+    }catch(err){
+      toast.show('Submission failed: '+err.message,'error');
+    }
+    setSaving(false);
+  }
+
+  // Portal closed screen
+
+
+  if(!isOpen) return(
+    <div>
+      <div className="portal-header">
+        <div className="portal-logo">EPMCE — Office of the Controller of Examinations</div>
+        <div className="portal-title">External Staff Claim Portal</div>
+        <div className="portal-sub">Er. Perumal Manimekalai College of Engineering</div>
+      </div>
+      <div className="portal-wrap" style={{textAlign:'center',paddingTop:60}}>
+        <div style={{fontSize:56,marginBottom:20}}>{tokenInfo.expired?'⏰':'🔒'}</div>
+        <div style={{fontSize:22,fontWeight:700,color:'var(--text)',marginBottom:10}}>
+          {tokenInfo.expired?'Link Expired':'Submissions Closed'}
+        </div>
+        <div style={{fontSize:14,color:'var(--muted)',lineHeight:1.7,maxWidth:400,margin:'0 auto'}}>
+          {tokenInfo.expired
+            ?'This submission link has expired. Please request a new link from the COE office.'
+            :'You need a valid link from the COE office to submit your claim.'}
+        </div>
+        <div style={{marginTop:30,padding:'18px 24px',background:'var(--ext-light)',border:'1px solid #d8aee8',borderRadius:10,display:'inline-block',fontSize:14,color:'var(--ext)',fontWeight:600,maxWidth:400}}>
+          <div style={{marginBottom:6}}>📞 For a new link or queries, contact:</div>
+          <div style={{fontSize:13,color:'var(--text)',fontWeight:600,marginBottom:4}}>Controller of Examinations, EPMCE</div>
+          <div style={{fontSize:18,fontWeight:700,color:'var(--ext)',fontFamily:'DM Mono'}}>+91 XXXXXXXXXX</div>
+          <div style={{fontSize:11,color:'var(--muted)',marginTop:6,fontWeight:400}}>(Replace with actual COE office number)</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if(submitted) return(
+    <div>
+      <div className="portal-header">
+        <div className="portal-logo">EPMCE — Office of the Controller of Examinations</div>
+        <div className="portal-title">External Staff Portal</div>
+      </div>
+      <div className="portal-wrap">
+        <div className="success-wrap">
+          <div className="success-icon">✅</div>
+          <div className="success-title">Submitted Successfully!</div>
+          <div className="success-sub">
+            Your claim details have been submitted to the COE office.<br/>
+            The COE will review and approve your submission.<br/>
+            Please note your reference number below.
+          </div>
+          <div className="ref-box">REF: {refId}</div>
+          <div style={{marginTop:14,fontSize:12,color:'var(--muted)',lineHeight:1.6}}>
+            Save this reference number. If you need to follow up, share this REF<br/>with the COE office to find your submission.
+          </div>
+          <div style={{marginTop:24,fontSize:13,color:'var(--muted)'}}>
+            You may close this page. For queries contact the COE office.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return(
+    <div>
+      <Toasts toasts={toast.toasts}/>
+      <div className="portal-header">
+        <div className="portal-logo">EPMCE — Office of the Controller of Examinations</div>
+        <div className="portal-title">External Staff Claim Portal</div>
+        <div className="portal-sub">Er. Perumal Manimekalai College of Engineering</div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',marginTop:12}}>
+          {activeSeason&&<div className="portal-badge">📅 Exam Season: {activeSeason.name}</div>}
+          {tokenInfo.expiry&&<div className="portal-badge">🗓️ Closes on: {new Date(tokenInfo.expiry).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>}
+          {tokenInfo.expiry&&(()=>{
+            const sLeft=Math.max(0,Math.round((tokenInfo.expiry-Date.now())/1000));
+            const m=Math.floor(sLeft/60),s=sLeft%60;
+            const display=sLeft>86400?`${Math.floor(sLeft/86400)}d ${Math.floor((sLeft%86400)/3600)}h`:sLeft>3600?`${Math.floor(sLeft/3600)}h ${m%60}m`:sLeft>60?`${m}m ${s}s`:`${s}s`;
+            return <div className="portal-badge" style={{background:sLeft<300?'rgba(220,50,50,.6)':'rgba(255,255,255,.2)'}}>
+              ⏳ {display} remaining
+            </div>;
+          })()}
+        </div>
+      </div>
+
+      <div className="portal-wrap">
+        <Steps step={step}/>
+
+        {/* ── STEP 0: SELECT STAFF TYPE ── */}
+        {step===0&&staffType===null&&(
+          <div>
+            <div className="card" style={{textAlign:'center',padding:'40px 24px'}}>
+              <div style={{fontSize:42,marginBottom:14}}>👥</div>
+              <div style={{fontSize:20,fontWeight:700,marginBottom:8,color:'var(--text)'}}>Are you Internal or External Staff?</div>
+              <div style={{fontSize:13,color:'var(--muted)',marginBottom:30,maxWidth:420,margin:'0 auto 30px'}}>Please select to continue. Internal staff are EPMCE faculty / employees. External staff are from other institutions.</div>
+              <div style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}}>
+                <button onClick={()=>setStaffType('INT')} style={{padding:'18px 28px',background:'#fff',border:'2px solid var(--int)',color:'var(--int)',borderRadius:12,fontSize:15,fontWeight:600,cursor:'pointer',minWidth:200,display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
+                  <span style={{fontSize:30}}>🏛️</span>
+                  <span>Internal Staff</span>
+                  <span style={{fontSize:11,fontWeight:400,color:'var(--muted)'}}>EPMCE Faculty</span>
+                </button>
+                <button onClick={()=>{setStaffType('EXT');setStep(1);}} style={{padding:'18px 28px',background:'var(--ext)',border:'2px solid var(--ext)',color:'#fff',borderRadius:12,fontSize:15,fontWeight:600,cursor:'pointer',minWidth:200,display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
+                  <span style={{fontSize:30}}>👤</span>
+                  <span>External Staff</span>
+                  <span style={{fontSize:11,fontWeight:400,opacity:.85}}>From other institutions</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── INTERNAL STAFF NOT ALLOWED ── */}
+        {step===0&&staffType==='INT'&&(
+          <div>
+            <div className="card" style={{textAlign:'center',padding:'40px 24px',borderTop:'3px solid #c77700'}}>
+              <div style={{fontSize:48,marginBottom:14}}>⚠️</div>
+              <div style={{fontSize:20,fontWeight:700,marginBottom:10,color:'#c77700'}}>This Portal is for External Staff Only</div>
+              <div style={{fontSize:14,color:'var(--text)',lineHeight:1.7,maxWidth:480,margin:'0 auto 24px'}}>
+                Internal staff (EPMCE faculty) cannot submit claims through this portal.<br/>
+                Please contact the <strong>Controller of Examinations Office</strong> directly to submit your claims.
+              </div>
+              <div style={{padding:'18px 24px',background:'#fffbeb',border:'1px solid #f6d860',borderRadius:10,display:'inline-block',fontSize:14,maxWidth:400}}>
+                <div style={{marginBottom:6,color:'#7a5c00',fontWeight:600}}>📞 Contact:</div>
+                <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>Controller of Examinations, EPMCE</div>
+                <div style={{fontSize:18,fontWeight:700,color:'var(--int)',fontFamily:'DM Mono'}}>+91 XXXXXXXXXX</div>
+                <div style={{fontSize:11,color:'var(--muted)',marginTop:6,fontWeight:400}}>(Replace with actual COE office number)</div>
+              </div>
+              <div style={{marginTop:24}}>
+                <button onClick={()=>setStaffType(null)} className="btn-secondary">← Go Back</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 1: WORK TYPE ── */}
+        {step===1&&(
+          <div>
+            <div className="card">
+              <div className="card-title"><div className="card-title-icon">📂</div>Select Your Work Type</div>
+              <div className="wt-grid">
+                {EXT_WORKS.map(w=>(
+                  <div key={w.id} className={`wt-card${workType===w.id?' selected':''}`} onClick={()=>setWorkType(w.id)}>
+                    <div className="wt-icon">{w.icon}</div>
+                    <div className="wt-label">{w.label}</div>
+                    <div className="wt-sub">{w.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="form-actions">
+              <button className="btn-secondary" onClick={()=>{setStep(0);setStaffType(null);}}>← Back</button>
+              <button className="btn-primary" onClick={nextFromStep1}>Next — Your Details →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 2: PERSONAL DETAILS ── */}
+        {step===2&&(
+          <div>
+            <div className="season-notice">📋 Submitting for: <strong style={{marginLeft:4}}>{wt?.label}</strong></div>
+            <div className="card">
+              <div className="card-title"><div className="card-title-icon">👤</div>Personal Details</div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Full Name <span className="req">*</span></label>
+                  <input className={`form-input${errors.name?' error':''}`} value={personal.name} onChange={e=>p('name',e.target.value)} placeholder="Your full name"/>
+                  {errors.name&&<div className="field-err">{errors.name}</div>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Designation</label>
+                  <input className="form-input" value={personal.designation} onChange={e=>p('designation',e.target.value)} placeholder="e.g. Associate Professor"/>
+                </div>
+              </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">College Name</label>
+                  <input className="form-input" value={personal.college} onChange={e=>p('college',e.target.value)} placeholder="Your college"/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">College Code</label>
+                  <input className="form-input mono" value={personal.college_code} onChange={e=>p('college_code',e.target.value.toUpperCase())} placeholder="e.g. 4128" maxLength={10}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Department</label>
+                  <select className="form-select" value={personal.dept} onChange={e=>p('dept',e.target.value)}>
+                    <option value="">— Select Department —</option>
+                    {DEPTS.map(d=><option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Mobile Number <span className="req">*</span>
+                    {personal.mobile_no&&(()=>{
+                      const v=validateMobile(personal.mobile_no);
+                      return v.valid
+                        ? <span style={{marginLeft:6,fontSize:11,color:'var(--success)',fontWeight:700}}>✓ Valid</span>
+                        : <span style={{marginLeft:6,fontSize:11,color:'var(--danger)',fontWeight:700}}>✕ {v.reason}</span>;
+                    })()}
+                  </label>
+                  <input className={`form-input mono${errors.mobile_no?' error':''}`} value={personal.mobile_no} onChange={e=>p('mobile_no',e.target.value.replace(/\D/g,'').slice(0,10))} placeholder="10-digit mobile" maxLength={10}/>
+                  {errors.mobile_no&&<div className="field-err">{errors.mobile_no}</div>}
+                </div>
+              </div>
+
+              {/* QP / Scrutiny fields */}
+              {isQP&&(
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Subject Code <span className="req">*</span></label>
+                    <input className={`form-input mono${errors.subject_code?' error':''}`} value={personal.subject_code} onChange={e=>p('subject_code',e.target.value)} placeholder="e.g. CS8391"/>
+                    {errors.subject_code&&<div className="field-err">{errors.subject_code}</div>}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Subject Name</label>
+                    <input className="form-input" value={personal.subject_name} onChange={e=>p('subject_name',e.target.value)} placeholder="e.g. Data Structures"/>
+                  </div>
+                </div>
+              )}
+
+              {/* Valuation fields */}
+              {isVal&&(
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Board Name <span className="req">*</span></label>
+                    <input className={`form-input${errors.board_name?' error':''}`} value={personal.board_name} onChange={e=>p('board_name',e.target.value)} placeholder="Board name"/>
+                    {errors.board_name&&<div className="field-err">{errors.board_name}</div>}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Date rows for PRAC_EXT */}
+            {isPrac&&(
+              <div className="card">
+                <div className="card-title"><div className="card-title-icon">📅</div>Date / Session Details</div>
+                <div style={{overflowX:'auto'}}>
+                  <table className="date-rows-table">
+                    <thead><tr>
+                      <th>Date</th><th>Session</th><th>No. of Sessions</th><th>Subject Code</th><th>Assigned Duty</th><th></th>
+                    </tr></thead>
+                    <tbody>{dateRows.map((r,i)=>(
+                      <tr key={i}>
+                        <td><input type="date" value={r.date||''} onChange={e=>setDR(i,'date',e.target.value)}/></td>
+                        <td><select value={r.session||'FN'} onChange={e=>setDR(i,'session',e.target.value)}><option>FN</option><option>AN</option><option>Both</option></select></td>
+                        <td><input type="number" min="1" value={r.no_sessions===""?"":(r.no_sessions??1)} onChange={e=>setDR(i,'no_sessions',e.target.value===""?"":Number(e.target.value))}/></td>
+                        <td><input value={r.subject_code||''} onChange={e=>setDR(i,'subject_code',e.target.value)} placeholder="Sub code"/></td>
+                        <td><input value={r.assigned_duty||''} onChange={e=>setDR(i,'assigned_duty',e.target.value)} placeholder="Duty"/></td>
+                        <td>{dateRows.length>1&&<button className="btn-sm-del" onClick={()=>delDR(i)}>✕</button>}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+                <button className="btn-sm-add" style={{marginTop:10}} onClick={addDR}>+ Add Row</button>
+              </div>
+            )}
+
+            {/* Date rows for EXT_DUTY */}
+            {isExtDuty&&(
+              <div className="card">
+                <div className="card-title"><div className="card-title-icon">📅</div>Date / Session Details</div>
+                <div style={{overflowX:'auto'}}>
+                  <table className="date-rows-table">
+                    <thead><tr>
+                      <th>Date</th><th>Session</th><th></th>
+                    </tr></thead>
+                    <tbody>{dateRows.map((r,i)=>(
+                      <tr key={i}>
+                        <td><input type="date" value={r.date||''} onChange={e=>setDR(i,'date',e.target.value)}/></td>
+                        <td><select value={r.session||'FN'} onChange={e=>setDR(i,'session',e.target.value)}><option>FN</option><option>AN</option><option>Both</option></select></td>
+                        <td>{dateRows.length>1&&<button className="btn-sm-del" onClick={()=>delDR(i)}>✕</button>}</td>
+                      </tr>
+                    ))}</tbody>
+
+                  </table>
+                </div>
+                <button className="btn-sm-add" style={{marginTop:10}} onClick={addDR}>+ Add Row</button>
+              </div>
+            )}
+
+            <div className="form-actions">
+              <button className="btn-secondary" onClick={()=>setStep(1)}>← Back</button>
+              <button className="btn-primary" onClick={nextFromStep2}>Next — Bank Details →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 3: BANK DETAILS ── */}
+        {step===3&&(
+          <div>
+            <div className="card">
+              <div className="card-title"><div className="card-title-icon">🏦</div>Bank Details</div>
+              <div style={{background:'#fffbeb',border:'1px solid #f6d860',borderRadius:8,padding:'10px 14px',fontSize:12,color:'#7a5c00',marginBottom:16}}>
+                ⚠️ Please double-check your bank details carefully. Incorrect details may delay your payment.
+              </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Account Number <span className="req">*</span></label>
+                  <input className={`form-input mono${errors.ac_no?' error':''}`} value={bank.ac_no} onChange={e=>b('ac_no',e.target.value)} placeholder="Account number"/>
+                  {errors.ac_no&&<div className="field-err">{errors.ac_no}</div>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">IFSC Code <span className="req">*</span>
+                    {ifscStatus.state==='checking'&&<span style={{marginLeft:8,fontSize:11,color:'var(--muted)',fontWeight:500}}>⏳ Checking…</span>}
+                    {ifscStatus.state==='valid'&&<span style={{marginLeft:8,fontSize:11,color:'var(--success)',fontWeight:700}}>✓ Verified</span>}
+                    {ifscStatus.state==='invalid'&&<span style={{marginLeft:8,fontSize:11,color:'var(--danger)',fontWeight:700}}>✕ Invalid</span>}
+                    {ifscStatus.state==='error'&&<span style={{marginLeft:8,fontSize:11,color:'#c77700',fontWeight:700}}>⚠ Cannot verify</span>}
+                  </label>
+                  <input 
+                    className={`form-input mono${errors.ifsc_code||ifscStatus.state==='invalid'?' error':''}`} 
+                    value={bank.ifsc_code} 
+                    onChange={e=>onIfscChange(e.target.value)} 
+                    placeholder="e.g. SBIN0001234"
+                    maxLength={11}
+                    style={ifscStatus.state==='valid'?{borderColor:'var(--success)',background:'#f0faf4'}:{}}
+                  />
+                  {errors.ifsc_code&&<div className="field-err">{errors.ifsc_code}</div>}
+                  {ifscStatus.state==='invalid'&&ifscStatus.msg&&<div className="field-err">{ifscStatus.msg}</div>}
+                  {ifscStatus.state==='error'&&<div style={{fontSize:11,color:'#c77700',marginTop:2}}>{ifscStatus.msg} — you can still submit manually</div>}
+                  {ifscStatus.state==='valid'&&ifscStatus.data&&<div style={{fontSize:11,color:'var(--success)',marginTop:2}}>
+                    {ifscStatus.data.BANK} · {ifscStatus.data.BRANCH}{ifscStatus.data.CITY?', '+ifscStatus.data.CITY:''}
+                  </div>}
+                </div>
+              </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Bank Name <span className="req">*</span></label>
+                  <input className={`form-input${errors.bank?' error':''}`} value={bank.bank} onChange={e=>b('bank',e.target.value)} placeholder="e.g. State Bank of India"/>
+                  {errors.bank&&<div className="field-err">{errors.bank}</div>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Branch <span className="req">*</span></label>
+                  <input className={`form-input${errors.branch?' error':''}`} value={bank.branch} onChange={e=>b('branch',e.target.value)} placeholder="Branch name"/>
+                  {errors.branch&&<div className="field-err">{errors.branch}</div>}
+                </div>
+              </div>
+            </div>
+            <div className="form-actions">
+              <button className="btn-secondary" onClick={()=>setStep(2)}>← Back</button>
+              <button className="btn-primary" onClick={nextFromStep3}>Next — Review →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 4: REVIEW & SUBMIT ── */}
+        {step===4&&(
+          <div>
+            <div className="card">
+              <div className="card-title"><div className="card-title-icon">✅</div>Review Your Submission</div>
+              <div style={{fontSize:12,color:'var(--muted)',marginBottom:14}}>Please review all details before submitting. Once submitted, you cannot edit your entry.</div>
+
+              <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:'var(--ext)'}}>Work Type</div>
+              <div className="review-row"><span className="review-label">Work Type</span><span className="review-val">{wt?.label}</span></div>
+              <div className="review-row"><span className="review-label">Exam Season</span><span className="review-val">{activeSeason?.name}</span></div>
+
+              <div style={{fontWeight:700,fontSize:13,margin:'14px 0 8px',color:'var(--ext)'}}>Personal Details</div>
+              <div className="review-row"><span className="review-label">Name</span><span className="review-val">{personal.name}</span></div>
+              {personal.designation&&<div className="review-row"><span className="review-label">Designation</span><span className="review-val">{personal.designation}</span></div>}
+              {personal.college&&<div className="review-row"><span className="review-label">College</span><span className="review-val">{personal.college}</span></div>}
+              {personal.college_code&&<div className="review-row"><span className="review-label">College Code</span><span className="review-val mono">{personal.college_code}</span></div>}
+              {personal.subject_name&&<div className="review-row"><span className="review-label">Subject Name</span><span className="review-val">{personal.subject_name}</span></div>}
+              {personal.dept&&<div className="review-row"><span className="review-label">Department</span><span className="review-val">{personal.dept}</span></div>}
+              <div className="review-row"><span className="review-label">Mobile</span><span className="review-val" style={{fontFamily:'DM Mono'}}>{personal.mobile_no}</span></div>
+              {personal.subject_code&&<div className="review-row"><span className="review-label">Subject Code</span><span className="review-val" style={{fontFamily:'DM Mono'}}>{personal.subject_code}</span></div>}
+              {personal.board_name&&<div className="review-row"><span className="review-label">Board Name</span><span className="review-val">{personal.board_name}</span></div>}
+
+              <div style={{fontWeight:700,fontSize:13,margin:'14px 0 8px',color:'var(--ext)'}}>Bank Details</div>
+              <div className="review-row"><span className="review-label">Account No</span><span className="review-val" style={{fontFamily:'DM Mono'}}>{bank.ac_no}</span></div>
+              <div className="review-row"><span className="review-label">IFSC Code</span><span className="review-val" style={{fontFamily:'DM Mono'}}>{bank.ifsc_code}</span></div>
+              <div className="review-row"><span className="review-label">Bank</span><span className="review-val">{bank.bank}</span></div>
+              <div className="review-row"><span className="review-label">Branch</span><span className="review-val">{bank.branch}</span></div>
+
+              {isDateBased&&(
+                <>
+                  <div style={{fontWeight:700,fontSize:13,margin:'14px 0 8px',color:'var(--ext)'}}>Date / Session Rows</div>
+                  <div className="review-row"><span className="review-label">Rows</span><span className="review-val">{dateRows.length} date row(s)</span></div>
+                  {!adminSetsAmount&&(
+                    <div className="review-row" style={{borderTop:'2px solid var(--ext)',paddingTop:10,marginTop:4}}>
+                      <span className="review-label" style={{fontWeight:700}}>Total Claim Amount</span>
+                      <span className="review-val" style={{color:'var(--ext)',fontSize:16,fontWeight:700}}>{fmt(totalAmount)}</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="form-actions">
+              <button className="btn-secondary" onClick={()=>setStep(3)}>← Back</button>
+              <button className="btn-primary" onClick={submit} disabled={saving}>
+                {saving?'Submitting…':'Submit Claim ✓'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Portal/>);
+</script>
+</body>
+</html>
